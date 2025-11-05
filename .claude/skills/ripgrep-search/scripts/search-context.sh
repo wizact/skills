@@ -112,22 +112,28 @@ while [[ $# -gt 0 ]]; do
             fi
             shift
             ;;
-        --type=*|-t*)
-            if [[ $1 == --type=* ]]; then
-                FILE_TYPE="${1#*=}"
-            else
-                FILE_TYPE="$2"
-                shift
-            fi
+        --type=*)
+            FILE_TYPE="${1#*=}"
             shift
             ;;
-        --glob=*|-g*)
-            if [[ $1 == --glob=* ]]; then
-                GLOB_PATTERN="${1#*=}"
-            else
-                GLOB_PATTERN="$2"
-                shift
-            fi
+        --type|-t)
+            FILE_TYPE="$2"
+            shift 2
+            ;;
+        -t*)
+            FILE_TYPE="${1#-t}"
+            shift
+            ;;
+        --glob=*)
+            GLOB_PATTERN="${1#*=}"
+            shift
+            ;;
+        --glob|-g)
+            GLOB_PATTERN="$2"
+            shift 2
+            ;;
+        -g*)
+            GLOB_PATTERN="${1#-g}"
             shift
             ;;
         --case-sensitive)
