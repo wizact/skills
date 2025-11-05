@@ -50,3 +50,9 @@ Always ensure commits are atomic (one logical change) and provide meaningful con
 
 [optional footer(s)]
 ```
+
+## Notes
+- Do not add the following message to the commit message:
+```
+ 🤖 Generated with [Claude Code](https://claude.com/claude-code)
+ ```
