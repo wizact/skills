@@ -15,7 +15,7 @@ for skill in "${skills[@]}"; do
 
     basename=$(basename "$skill")
 
-    skill_dir=$(realpath "$global_skills_dir/$basename")
+    skill_dir="$global_skills_dir/$basename"
     if [ ! -e "$skill_dir" ]; then
         echo "Skill $basename not found in global skills directory. Creating symlink."
         ln -s "$(realpath "$skill")" "$skill_dir" || echo "Failed to create symlink for $basename"
