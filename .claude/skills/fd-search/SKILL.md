@@ -1,6 +1,6 @@
 ---
 name: fd-search
-description: Fast and user-friendly file system search using fd as a replacement for find command
+description: Fast and user-friendly file system search using fd as a replacement for `find` command
 ---
 
 # fd Search Skill

@@ -2,9 +2,11 @@
 
 global_skills_dir="$HOME/.claude/skills"
 global_commands_dir="$HOME/.claude/commands"
+global_agents_dir="$HOME/.claude/agents"
 
 skills=($(ls -d ./.claude/skills/*/ 2>/dev/null))
 commands=($(ls -f ./.claude/commands/* 2>/dev/null))
+agents=($(ls -f ./.claude/agents/* 2>/dev/null))
 
 if [ ! -d "$global_skills_dir" ]; then
     mkdir -p "$global_skills_dir"
@@ -38,5 +40,22 @@ for command in "${commands[@]}"; do
         ln -s "$(realpath "$command")" "$command_path" || echo "Failed to create symlink for $basename"
     else
         echo "Command $basename already exists in global commands directory. Skipping symlink creation."
+    fi
+done
+
+if [ ! -d "$global_agents_dir" ]; then
+    mkdir -p "$global_agents_dir"
+fi
+
+for agent in "${agents[@]}"; do
+    echo "Setting up agent in folder: $(realpath "$agent")"
+    basename=$(basename "$agent")
+
+    agent_path="$global_agents_dir/$basename"
+    if [ ! -e "$agent_path" ]; then
+        echo "Agent $basename not found in global agents directory. Creating symlink."
+        ln -s "$(realpath "$agent")" "$agent_path" || echo "Failed to create symlink for $basename"
+    else
+        echo "Agent $basename already exists in global agents directory. Skipping symlink creation."
     fi
 done
