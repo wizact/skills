@@ -1,6 +1,6 @@
 ---
 name: ripgrep-search
-description: Ultra-fast text search using ripgrep (rg) with advanced regex, multiline, and filtering capabilities
+description: Ultra-fast text search using ripgrep (rg) with advanced regex, multiline, and filtering capabilities. This skill should be used as a replacement for `grep`
 ---
 
 # Ripgrep Search Skill
