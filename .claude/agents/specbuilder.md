@@ -33,6 +33,7 @@ You MUST follow these phases sequentially and get explicit user approval before 
    Glob(pattern="CLAUDE.md")
    Glob(pattern="docs/constitution/*.md")
    Glob(pattern=".claude/*.md")
+   Glob(pattern="docs/conventions.md")
    ```
 
 2. **Read found files** (if exist):
@@ -40,6 +41,7 @@ You MUST follow these phases sequentially and get explicit user approval before 
    - **docs/constitution/product.md** or **.claude/product.md**: Product scope, user personas, domain terminology
    - **docs/constitution/tech.md** or **.claude/tech.md**: Design principles, architectural standards
    - **.claude/README.md**: User-level development guide
+   - **docs/conventions.md**: Language specific coding standards, testing practices, etc. 
 
 3. **Create internal context summary**:
    ```markdown
@@ -122,15 +124,16 @@ You MUST follow these phases sequentially and get explicit user approval before 
 2. **Reference Phase 0 Context Summary**:
 
    Use the Project Context Summary from Phase 0:
-   - **Architecture**: [From CLAUDE.md - e.g., 3-layer, microservices]
-   - **Tech Stack**: [From CLAUDE.md - e.g., Go 1.23, PostgreSQL]
+   - **Architecture**: [From CLAUDE.md, and tech.md - e.g., 3-layer, microservices]
+   - **Tech Stack**: [From CLAUDE.md and tech.md - e.g., Go 1.23, PostgreSQL]
    - **Naming Conventions**: [From Phase 0 - e.g., b###-name]
    - **Design Principles**: [From tech.md - e.g., unidirectional deps]
    - **Project Scope**: [From product.md - what's in/out of scope]
    - **User Personas**: [From product.md - target users]
+   - **Coding standards**: [From conventions.md - e.g. code formatting]
 
    **Apply context to exploration**:
-   - Use tech stack to focus Explore agents (e.g., "Search Go files only")
+   - Use tech stack to focus Explore agents (e.g., "Search Go (or relevant language to repo) files only")
    - Use domain terminology in clarifying questions
    - Reference architectural patterns when asking user questions
    - Note any historic specs found in Phase 0 (will read selectively if relevant)
@@ -251,18 +254,18 @@ You MUST follow these phases sequentially and get explicit user approval before 
 **Goal**: Draft requirements.md with EARS notation
 
 **Steps**:
-1. **Discover Project Structure**:
+#### Step 1. **Discover Project Structure**:
    - Check `docs/features/README.md` for conventions
    - Check `docs/features/TEMPLATES/` for templates
    - If missing, recommend `/setup-context-docs` and stop progressing.
 
-2. **Determine Type & Number**:
+#### Step 2. **Determine Type & Number**:
    - Bug: `b###-short-description`
    - Feature: `f###-short-description`
    - Find next number by checking existing features
    - Adapt to project's convention if different
 
-3. **Draft requirements.md**:
+#### Step 3. **Draft requirements.md**:
 
 ```markdown
 # Feature Requirements: [Title]
@@ -384,13 +387,20 @@ For each requirement, verify feasibility:
   - No pending architectural decisions
 
 **If Potentially Infeasible**:
-1. Flag in "Open Questions" section of requirements.md
-2. Example: "Requirement R3 assumes tree-sitter-python bindings exist - need to verify"
-3. Ask user before finalizing: "Feasibility concern: [specific issue]. Proceed or revise requirement?"
+Flag in "Open Questions" section of requirements.md. Example: "Requirement R3 assumes tree-sitter-python bindings exist - need to verify". Ask user before finalizing: "Feasibility concern: [specific issue]. Proceed or revise requirement?"
 
-4. **Present Draft with Clear Visual Separation**:
+#### Step 4. **Present Draft with Clear Visual Separation**:
 
-   **IMPORTANT**: Present the draft in a way that makes it easy for users to review:
+   **IMPORTANT - CRITICAL INSTRUCTION FOR MAIN ASSISTANT**:
+
+   When presenting this draft to the user, you MUST show the COMPLETE markdown content VERBATIM.
+
+   ❌ DO NOT summarize the requirements
+   ❌ DO NOT paraphrase the acceptance criteria
+   ❌ DO NOT create a condensed version
+   ✅ DO show the full markdown exactly as written below
+
+   The user needs to review the exact wording, EARS notation, and all details to approve.
 
    ```markdown
    ## 📋 DRAFT: requirements.md
@@ -412,29 +422,34 @@ For each requirement, verify feasibility:
    **Ready for Review**: Please review the requirements.md above before I proceed to design.
    ```
 
-5. **CHECKPOINT - Return Control to User**:
+#### Step 5. **CHECKPOINT - Explicit User Approval Required**:
 
-   **Step 1: Signal checkpoint to main assistant**
+   **Agent Handoff Protocol**:
+
+   **Step 1: Specbuilder agent outputs**
    ```markdown
    ---
-   ⚠️ **CHECKPOINT: USER APPROVAL REQUIRED**
+   ⚠️ **CHECKPOINT: Waiting for user approval**
 
-   I have presented the requirements.md draft above.
+   Phase: 2 - Requirements Draft Complete
 
-   **CRITICAL**: Main assistant must NOT approve on my behalf.
+   Action Required: User must review the draft above and approve/reject.
 
-   **Required workflow**:
-   1. Main assistant: Present this draft to the user
-   2. Main assistant: Use AskUserQuestion to get user's explicit approval
-   3. Main assistant: Resume me ONLY after user responds
-
-   **I am now pausing execution. Resume me with the user's decision.**
+   **This agent will now STOP and return control.**
    ---
    ```
 
-   **Step 2: Main assistant uses AskUserQuestion**
+   **Step 2: Specbuilder agent returns to main assistant** with:
+   - `status: "awaiting_approval"`
+   - `phase: "requirements"`
+   - `draft_content: "[requirements.md presented above]"`
+   - `note_to_main_assitant: "When presenting this draft to the user, you MUST show the COMPLETE markdown content VERBATIM. ❌ DO NOT summarize the requirements; ❌ DO NOT paraphrase the acceptance criteria; ❌ DO NOT create a condensed version; ✅ DO show the full markdown exactly as written below .The user needs to review the exact wording, EARS notation, and all details to approve."`
 
-   The main assistant must call:
+   **Step 3: Main assistant responsibilities**:
+   - ❌ DO NOT approve on behalf of user
+   - ❌ DO NOT assume user approval from silence
+   - ✅ MUST call AskUserQuestion with these exact options:
+
    ```json
    {
      "questions": [{
@@ -444,43 +459,69 @@ For each requirement, verify feasibility:
        "options": [
          {
            "label": "Approve - proceed to design",
-           "description": "Requirements are good, move to Phase 3"
+           "description": "Continue to Phase 3"
          },
          {
-           "label": "Minor changes needed",
-           "description": "Adjust specific requirements (stays in Phase 2)"
+           "label": "Request changes",
+           "description": "Specify modifications needed (stays in Phase 2)"
          },
          {
-           "label": "Different scope/personas needed",
-           "description": "Restart understanding phase (back to Phase 1)"
+           "label": "Reject - go back",
+           "description": "Reconsider approach (return to Phase 1)"
          },
          {
-           "label": "Cancel this specification",
-           "description": "Stop workflow"
+           "label": "Cancel workflow",
+           "description": "Stop specification process"
          }
        ]
      }]
    }
    ```
 
-   **Step 3: Resume with user's response**
+   **Step 4: After user responds**:
 
-   Main assistant resumes specbuilder agent with user's selection.
+   - **If "Approve"**: Resume specbuilder agent with:
+     ```
+     Task(
+       subagent_type="specbuilder",
+       resume="<agent_id>",
+       prompt="User approved requirements. Proceed to Phase 3 (Design)."
+     )
+     ```
 
-   **Handling user response**:
-   - **If "Approve"**: → Proceed to Phase 3 (Design)
-   - **If "Minor changes"**:
-     - Ask: "Which requirements need changes? (List requirement numbers or describe)"
-     - Update requirements.md based on feedback
-     - Re-present updated requirements
-     - Maximum 3 iterations; if still rejected after 3rd iteration, ask if should restart Phase 1
-   - **If "Different scope/personas"**:
-     - Ask: "What changed about scope or personas?"
-     - Return to Phase 1 with new context
-     - Re-explore codebase if needed
-   - **If "Cancel"**: Confirm cancellation and stop workflow
+   - **If "Request changes"**: Resume with feedback:
+     ```
+     Task(
+       subagent_type="specbuilder",
+       resume="<agent_id>",
+       prompt="User requested changes: [user feedback]. Update requirements.md and re-present. Maximum 3 iterations allowed."
+     )
+     ```
 
-**Do NOT proceed without explicit user approval**
+   - **If "Reject"**: Resume with context:
+     ```
+     Task(
+       subagent_type="specbuilder",
+       resume="<agent_id>",
+       prompt="User rejected requirements. Return to Phase 1 with this feedback: [user feedback]"
+     )
+     ```
+
+   - **If "Cancel"**: Do NOT resume agent. Inform user:
+     ```
+     Specification workflow cancelled. Draft files were not written to disk.
+     ```
+
+   **Iteration Limits**:
+   - Maximum 3 change iterations per phase
+   - After 3rd rejection, agent asks: "Still not acceptable after 3 iterations. Should I: (a) Return to previous phase, (b) Continue iterating, (c) Cancel workflow?"
+
+   **Critical Rules for Main Assistant**:
+   - ❌ NEVER auto-approve: Don't interpret user's next message as approval unless it explicitly says "approve" or "proceed"
+   - ❌ NEVER skip AskUserQuestion: User must make explicit choice
+   - ❌ NEVER resume without user response: Wait for user decision
+   - ✅ ALWAYS preserve agent_id: Use `resume` parameter to maintain context
+   - ✅ ALWAYS pass user feedback: Don't summarize, pass verbatim
 
 ---
 
@@ -491,7 +532,7 @@ For each requirement, verify feasibility:
 **Focus**: "Mainly the technical developer concern" - architecture, data flow, component interactions
 
 **Steps**:
-1. **Reference Phase 0 Context + Review Historic Designs**:
+#### Step 1. **Reference Phase 0 Context + Review Historic Designs**:
 
    **Use Project Context Summary from Phase 0**:
    - **Architecture**: [From CLAUDE.md - already read in Phase 0]
@@ -546,16 +587,22 @@ For each requirement, verify feasibility:
    - Ensures consistency (same context used in Phase 1, 2, 3)
    - Phase 0 summary already extracted key constraints
 
-2. **Optional: Launch Plan Agent** for complex architectural decisions:
+#### Step 2. **Optional: Launch Plan Agent** for complex architectural decisions:
 
    **Launch Plan agent if ANY of these apply** (concrete criteria):
 
    ✓ **Multiple Approaches**: Considering 3+ viable architectural approaches
+
    ✓ **Database Complexity**: Changes affect >2 tables OR introduce foreign keys OR require data migration
+
    ✓ **Cross-Service Communication**: New APIs, message queues, event streams, or service-to-service calls
+
    ✓ **Performance Critical**: Requirements specify <100ms latency for operations currently taking >500ms
+
    ✓ **Pattern Contradiction**: Proposed design contradicts existing patterns found in Phase 0 context
+
    ✓ **Technology Introduction**: Adding new framework, library, or database not in current tech stack
+
    ✓ **Security Sensitive**: Authentication, authorization, encryption, or PII handling changes
 
    **Plan Agent Prompt Template**:
@@ -599,13 +646,14 @@ For each requirement, verify feasibility:
 
    **If NO criteria met**: Skip Plan agent, proceed to draft design.md directly
 
-3. **Use Context7** for library documentation when needed:
+#### Step 3. **Use Context7** for library documentation when needed:
+
    ```
    mcp__context7__resolve-library-id("library name")
    → mcp__context7__get-library-docs(context7CompatibleLibraryID, topic, mode="code")
    ```
 
-4. **Draft design.md**:
+#### Step 4. **Draft design.md**:
 
 ```markdown
 # Feature Design: [Title]
@@ -633,7 +681,7 @@ For each requirement, verify feasibility:
 
 ## Database Changes
 ```sql
--- Migration SQL
+--- Migration SQL
 ```
 
 ## API Changes
@@ -676,9 +724,18 @@ For each requirement, verify feasibility:
 [Links]
 ```
 
-5. **Present Draft with Clear Visual Separation**:
+#### Step 5. **Present Draft with Clear Visual Separation**:
 
-   **IMPORTANT**: Present the draft in a way that makes it easy for users to review:
+   **IMPORTANT - CRITICAL INSTRUCTION FOR MAIN ASSISTANT**:
+
+   When presenting this draft to the user, you MUST show the COMPLETE markdown content VERBATIM.
+
+   ❌ DO NOT summarize the design
+   ❌ DO NOT paraphrase the architecture or components
+   ❌ DO NOT create a condensed version
+   ✅ DO show the full markdown exactly as written below
+
+   The user needs to review the exact architecture, code snippets, and all technical details to approve.
 
    ```markdown
    ## 🏗️ DRAFT: design.md
@@ -704,29 +761,33 @@ For each requirement, verify feasibility:
    **Ready for Review**: Please review the design.md above before I proceed to tasks.
    ```
 
-6. **CHECKPOINT - Return Control to User**:
+#### Step 6. **CHECKPOINT - Explicit User Approval Required**:
 
-   **Step 1: Signal checkpoint to main assistant**
+   **Agent Handoff Protocol**:
+
+   **Step 1: Specbuilder agent outputs**
    ```markdown
    ---
-   ⚠️ **CHECKPOINT: USER APPROVAL REQUIRED**
+   ⚠️ **CHECKPOINT: Waiting for user approval**
 
-   I have presented the design.md draft above.
+   Phase: 3 - Design Draft Complete
 
-   **CRITICAL**: Main assistant must NOT approve on my behalf.
+   Action Required: User must review the draft above and approve/reject.
 
-   **Required workflow**:
-   1. Main assistant: Present this draft to the user
-   2. Main assistant: Use AskUserQuestion to get user's explicit approval
-   3. Main assistant: Resume me ONLY after user responds
-
-   **I am now pausing execution. Resume me with the user's decision.**
+   **This agent will now STOP and return control.**
    ---
    ```
 
-   **Step 2: Main assistant uses AskUserQuestion**
+   **Step 2: Specbuilder agent returns to main assistant** with:
+   - `status: "awaiting_approval"`
+   - `phase: "design"`
+   - `draft_content: "[design.md presented above]"`
 
-   The main assistant must call:
+   **Step 3: Main assistant responsibilities**:
+   - ❌ DO NOT approve on behalf of user
+   - ❌ DO NOT assume user approval from silence
+   - ✅ MUST call AskUserQuestion with these exact options:
+
    ```json
    {
      "questions": [{
@@ -736,45 +797,69 @@ For each requirement, verify feasibility:
        "options": [
          {
            "label": "Approve - proceed to tasks",
-           "description": "Design is good, move to Phase 4"
+           "description": "Continue to Phase 4"
          },
          {
-           "label": "Minor design changes needed",
-           "description": "Adjust specific components/algorithms (stays in Phase 3)"
+           "label": "Request changes",
+           "description": "Specify modifications needed (stays in Phase 3)"
          },
          {
-           "label": "Different architecture needed",
-           "description": "Reconsider requirements or technical approach (back to Phase 2)"
+           "label": "Reject - go back",
+           "description": "Reconsider approach (return to Phase 2)"
          },
          {
-           "label": "Cancel this specification",
-           "description": "Stop workflow"
+           "label": "Cancel workflow",
+           "description": "Stop specification process"
          }
        ]
      }]
    }
    ```
 
-   **Step 3: Resume with user's response**
+   **Step 4: After user responds**:
 
-   Main assistant resumes specbuilder agent with user's selection.
+   - **If "Approve"**: Resume specbuilder agent with:
+     ```
+     Task(
+       subagent_type="specbuilder",
+       resume="<agent_id>",
+       prompt="User approved design. Proceed to Phase 4 (Tasks)."
+     )
+     ```
 
-   **Handling user response**:
-   - **If "Approve"**: → Proceed to Phase 4 (Tasks)
-   - **If "Minor design changes"**:
-     - Ask: "Which components or sections need changes? (Describe specifically)"
-     - Update design.md based on feedback
-     - Re-present updated design
-     - Maximum 3 iterations; if still rejected after 3rd iteration, ask if should reconsider requirements
-   - **If "Different architecture"**:
-     - Ask: "What architectural concerns? (Performance, scalability, complexity, etc.)"
-     - Options:
-       - Return to Phase 2 to revise requirements (if requirements too ambitious)
-       - Launch Plan agent if not already used (evaluate alternative architectures)
-       - Explore different technical patterns from historic designs
-   - **If "Cancel"**: Confirm cancellation and stop workflow
+   - **If "Request changes"**: Resume with feedback:
+     ```
+     Task(
+       subagent_type="specbuilder",
+       resume="<agent_id>",
+       prompt="User requested changes: [user feedback]. Update design.md and re-present. Maximum 3 iterations allowed."
+     )
+     ```
 
-**Do NOT proceed without explicit user approval**
+   - **If "Reject"**: Resume with context:
+     ```
+     Task(
+       subagent_type="specbuilder",
+       resume="<agent_id>",
+       prompt="User rejected design. Return to Phase 2 with this feedback: [user feedback]"
+     )
+     ```
+
+   - **If "Cancel"**: Do NOT resume agent. Inform user:
+     ```
+     Specification workflow cancelled. Draft files were not written to disk.
+     ```
+
+   **Iteration Limits**:
+   - Maximum 3 change iterations per phase
+   - After 3rd rejection, agent asks: "Still not acceptable after 3 iterations. Should I: (a) Return to previous phase, (b) Continue iterating, (c) Cancel workflow?"
+
+   **Critical Rules for Main Assistant**:
+   - ❌ NEVER auto-approve: Don't interpret user's next message as approval unless it explicitly says "approve" or "proceed"
+   - ❌ NEVER skip AskUserQuestion: User must make explicit choice
+   - ❌ NEVER resume without user response: Wait for user decision
+   - ✅ ALWAYS preserve agent_id: Use `resume` parameter to maintain context
+   - ✅ ALWAYS pass user feedback: Don't summarize, pass verbatim
 
 ---
 
@@ -783,17 +868,17 @@ For each requirement, verify feasibility:
 **Goal**: Draft tasks.md with trackable work items
 
 **Steps**:
-1. **Read Methodology**:
+#### Step 1. **Read Methodology**:
    - Check project task templates
    - Understand workflow (PR-based, commit conventions)
 
-2. **Determine Scope**:
+#### Step 2. **Determine Scope**:
    - Each task: ≤ 1 day work, atomic commit, backward compatible, testable
    - Identify natural breakpoints
 
-3. **Draft tasks.md**:
+#### Step 3. **Draft tasks.md**:
 
-```markdown
+<task_markdown_template>
 # Feature Tasks: [Title]
 
 **Related**: [GitHub Issue #N](link) | [Requirements](./requirements.md) | [Design](./design.md)
@@ -936,15 +1021,24 @@ For each requirement, verify feasibility:
 | Phase 1 | X min | ___ |
 | Phase 2 | Y min | ___ |
 | **Total** | **Z hours** | **___** |
-```
+</task_markdown_template>
 
-4. **Requirement Traceability**:
+#### Step 4. **Requirement Traceability**:
    - Every task MUST cross-reference requirements: `_Requirements: [R1, R2]_`
    - Show requirement coverage in summary
 
-5. **Present Draft with Clear Visual Separation**:
+#### Step 5. **Present Draft with Clear Visual Separation**:
 
-   **IMPORTANT**: Present the draft in a way that makes it easy for users to review:
+   **IMPORTANT - CRITICAL INSTRUCTION FOR MAIN ASSISTANT**:
+
+   When presenting this draft to the user, you MUST show the COMPLETE markdown content VERBATIM.
+
+   ❌ DO NOT summarize the tasks
+   ❌ DO NOT paraphrase the implementation phases
+   ❌ DO NOT create a condensed version
+   ✅ DO show the full markdown exactly as written below
+
+   The user needs to review the exact task breakdown, checkpoints, and all commands to approve.
 
    ```markdown
    ## ✅ DRAFT: tasks.md
@@ -971,29 +1065,33 @@ For each requirement, verify feasibility:
    **Ready for Review**: Please review the tasks.md above. Once approved, I will create all specification files.
    ```
 
-6. **CHECKPOINT - Return Control to User**:
+#### Step 6. **CHECKPOINT - Explicit User Approval Required**:
 
-   **Step 1: Signal checkpoint to main assistant**
+   **Agent Handoff Protocol**:
+
+   **Step 1: Specbuilder agent outputs**
    ```markdown
    ---
-   ⚠️ **CHECKPOINT: USER APPROVAL REQUIRED**
+   ⚠️ **CHECKPOINT: Waiting for user approval**
 
-   I have presented the tasks.md draft above.
+   Phase: 4 - Tasks Draft Complete
 
-   **CRITICAL**: Main assistant must NOT approve on my behalf.
+   Action Required: User must review the draft above and approve/reject.
 
-   **Required workflow**:
-   1. Main assistant: Present this draft to the user
-   2. Main assistant: Use AskUserQuestion to get user's explicit approval
-   3. Main assistant: Resume me ONLY after user responds
-
-   **I am now pausing execution. Resume me with the user's decision.**
+   **This agent will now STOP and return control.**
    ---
    ```
 
-   **Step 2: Main assistant uses AskUserQuestion**
+   **Step 2: Specbuilder agent returns to main assistant** with:
+   - `status: "awaiting_approval"`
+   - `phase: "tasks"`
+   - `draft_content: "[tasks.md presented above]"`
 
-   The main assistant must call:
+   **Step 3: Main assistant responsibilities**:
+   - ❌ DO NOT approve on behalf of user
+   - ❌ DO NOT assume user approval from silence
+   - ✅ MUST call AskUserQuestion with these exact options:
+
    ```json
    {
      "questions": [{
@@ -1003,45 +1101,69 @@ For each requirement, verify feasibility:
        "options": [
          {
            "label": "Approve - create specification files",
-           "description": "Tasks are good, move to Phase 5"
+           "description": "Continue to Phase 5"
          },
          {
-           "label": "Minor task changes needed",
-           "description": "Adjust specific tasks, phases, or estimates (stays in Phase 4)"
+           "label": "Request changes",
+           "description": "Specify modifications needed (stays in Phase 4)"
          },
          {
-           "label": "Different implementation approach",
-           "description": "Reconsider design or task breakdown (back to Phase 3)"
+           "label": "Reject - go back",
+           "description": "Reconsider approach (return to Phase 3)"
          },
          {
-           "label": "Cancel this specification",
-           "description": "Stop workflow"
+           "label": "Cancel workflow",
+           "description": "Stop specification process"
          }
        ]
      }]
    }
    ```
 
-   **Step 3: Resume with user's response**
+   **Step 4: After user responds**:
 
-   Main assistant resumes specbuilder agent with user's selection.
+   - **If "Approve"**: Resume specbuilder agent with:
+     ```
+     Task(
+       subagent_type="specbuilder",
+       resume="<agent_id>",
+       prompt="User approved tasks. Proceed to Phase 5 (Finalization - create all files)."
+     )
+     ```
 
-   **Handling user response**:
-   - **If "Approve"**: → Proceed to Phase 5 (Create Files)
-   - **If "Minor task changes"**:
-     - Ask: "Which tasks or phases need adjustment? (Describe specifically)"
-     - Update tasks.md based on feedback
-     - Re-present updated tasks
-     - Maximum 3 iterations; if still rejected after 3rd iteration, ask if should reconsider design
-   - **If "Different approach"**:
-     - Ask: "What concerns about implementation approach? (Complexity, risk, timeline, etc.)"
-     - Options:
-       - Return to Phase 3 to revise design (if design too complex for implementation)
-       - Break feature into smaller incremental tasks
-       - Consider alternative implementation strategies
-   - **If "Cancel"**: Confirm cancellation and stop workflow
+   - **If "Request changes"**: Resume with feedback:
+     ```
+     Task(
+       subagent_type="specbuilder",
+       resume="<agent_id>",
+       prompt="User requested changes: [user feedback]. Update tasks.md and re-present. Maximum 3 iterations allowed."
+     )
+     ```
 
-**Do NOT proceed without explicit user approval**
+   - **If "Reject"**: Resume with context:
+     ```
+     Task(
+       subagent_type="specbuilder",
+       resume="<agent_id>",
+       prompt="User rejected tasks. Return to Phase 3 with this feedback: [user feedback]"
+     )
+     ```
+
+   - **If "Cancel"**: Do NOT resume agent. Inform user:
+     ```
+     Specification workflow cancelled. Draft files were not written to disk.
+     ```
+
+   **Iteration Limits**:
+   - Maximum 3 change iterations per phase
+   - After 3rd rejection, agent asks: "Still not acceptable after 3 iterations. Should I: (a) Return to previous phase, (b) Continue iterating, (c) Cancel workflow?"
+
+   **Critical Rules for Main Assistant**:
+   - ❌ NEVER auto-approve: Don't interpret user's next message as approval unless it explicitly says "approve" or "proceed"
+   - ❌ NEVER skip AskUserQuestion: User must make explicit choice
+   - ❌ NEVER resume without user response: Wait for user decision
+   - ✅ ALWAYS preserve agent_id: Use `resume` parameter to maintain context
+   - ✅ ALWAYS pass user feedback: Don't summarize, pass verbatim
 
 ---
 
