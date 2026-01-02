@@ -230,37 +230,31 @@ When this skill is invoked, follow these steps:
    - Design patterns used
    - Component interactions
 
-3. **Code Standards**:
-   - Language-specific conventions
-   - Naming, formatting, organization
-   - Error handling patterns
-   - Testing strategies
-
-4. **Database Design** (if applicable):
+3. **Database Design** (if applicable):
    - Schema details
    - Indexes, constraints
    - Migration strategy
    - Query patterns
 
-5. **Testing Requirements**:
+4. **Testing Requirements**:
    - Framework details
    - Coverage targets
    - Test organization
    - CI/CD specifics
 
-6. **Performance Targets** (technical metrics):
+5. **Performance Targets** (technical metrics):
    - Latency, throughput
    - Memory, CPU usage
    - Benchmark results
    - Optimization strategies
 
-7. **Security & Operations**:
+6. **Security & Operations**:
    - Security patterns
    - Deployment architecture
    - Configuration management
    - Monitoring
 
-8. **Dependency Policy**:
+7. **Dependency Policy**:
    - Dependency management
    - Version pinning
    - Audit process
@@ -280,6 +274,30 @@ When this skill is invoked, follow these steps:
 **File**: `docs/conventions.md`
 
 **Content**: Language-specific coding patterns and practices
+   - Language-specific conventions
+   - Naming, formatting, organization
+   - Error handling patterns
+   - Testing strategies
+
+**Reference Implementation**:
+
+Check if language-specific convention file exists in this repository. Available reference implementations:
+
+| Language | Template File | GitHub URL |
+|----------|--------------|------------|
+| Go | `docs/conventions.md` | [Go Conventions Template](https://github.com/wizact/dotclaude/blob/main/TEMPLATES/conventions/go/conventions.md) |
+
+**Creation Strategy**:
+1. **If language-specific convention exists in TEMPLATES/**:
+   - Use as reference for structure and content
+   - Adapt to current project specifics
+   - Follow the same section organization
+
+2. **If no template exists for detected language**:
+   - Create `docs/conventions.md` with placeholder sections
+   - Add note at top: "⚠️ This file contains placeholders. Please complete with project-specific conventions."
+   - Use standard sections below with `TODO:` markers
+   - User will complete later
 
 **Sections**:
 1. Code Conventions (filenames, naming, structure)
@@ -307,6 +325,13 @@ When this skill is invoked, follow these steps:
 
 **Content**: Language-agnostic feature specification guide
 
+**Reference Implementation**:
+
+A reference README.md is available that explains the feature specification structure:
+- **GitHub URL**: [Context-Docs README Template](https://github.com/wizact/dotclaude/blob/main/TEMPLATES/context-docs/README.md)
+- **Use as**: Foundation for creating docs/features/README.md
+- **Adapt**: Customize for project-specific workflow and conventions
+
 **Key sections**:
 1. **Structure**: Three-document pattern
    - **requirements.md** = WHAT to build (specifications, acceptance criteria, targets)
@@ -331,6 +356,23 @@ When this skill is invoked, follow these steps:
 - `docs/features/TEMPLATES/requirements.md.template`
 - `docs/features/TEMPLATES/design.md.template`
 - `docs/features/TEMPLATES/tasks.md.template`
+
+**Reference Implementation**:
+
+A complete example feature specification is available to learn from:
+- **Feature**: UUID Multi-Repo Support (f002-uuid-multi-repo)
+- **GitHub URL**: [Example Feature Spec](https://github.com/wizact/dotclaude/tree/main/TEMPLATES/context-docs/features/f002-uuid-multi-repo)
+- **Contains**: Complete requirements.md, design.md, tasks.md
+- **Use as**: Reference for structure, section organization, and level of detail
+
+**When creating templates**:
+1. Review the f002-uuid-multi-repo example to understand:
+   - How to structure requirements with EARS notation
+   - How to separate concerns between requirements and design
+   - How to break down implementation into trackable tasks
+   - Appropriate level of detail for each document
+2. Adapt the structure to be language-agnostic templates
+3. Include placeholder sections with clear guidance
 
 **requirements.md.template**:
 - Focus: WHAT (specifications, not implementation)
