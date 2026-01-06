@@ -283,9 +283,10 @@ When this skill is invoked, follow these steps:
 
 Check if language-specific convention file exists in this repository. Available reference implementations:
 
-| Language | Template File | GitHub URL |
-|----------|--------------|------------|
-| Go | `docs/conventions.md` | [Go Conventions Template](https://github.com/wizact/dotclaude/blob/main/TEMPLATES/conventions/go/conventions.md) |
+| Language | GitHub URL |
+|----------|--------------|
+| Go | [Go Conventions Template](https://github.com/wizact/dotclaude/blob/main/TEMPLATES/conventions/go/conventions.md) |
+| Python | [Python Conventions Template](https://github.com/wizact/dotclaude/blob/main/TEMPLATES/conventions/python/conventions.md) |
 
 **Creation Strategy**:
 1. **If language-specific convention exists in TEMPLATES/**:

@@ -22,6 +22,44 @@ You MUST follow these phases sequentially and get explicit user approval before 
 
 ---
 
+## 🤝 Decision-Making Protocol
+
+**When user input requires architectural decisions**, you MUST collaborate rather than choose autonomously.
+
+### Triggers for User Collaboration
+
+**Keyword indicators** in user prompt:
+- "what are the options"
+- "how should we"
+- "which approach"
+- "consider"
+- "maybe", "I think"
+- "or something else"
+- "recommend", "best way"
+
+**Technical indicators**:
+- Multiple valid frameworks/libraries exist (e.g., CLI: Cobra vs urfave/cli vs stdlib)
+- Significant tradeoffs (binary size, dependencies, complexity, learning curve)
+- No clear industry consensus or project precedent
+
+### Collaborative Decision Process
+
+**Phase 2 (Requirements)**:
+1. Document as "PENDING USER APPROVAL"
+2. List 2-4 viable options with brief pros/cons
+3. DO NOT select an option autonomously
+
+**Between Phase 2 and Phase 3** (Main Assistant):
+1. Use AskUserQuestion for pending decisions
+2. Collect user's choice before resuming agent
+
+**Phase 3 (Design)**:
+1. Update requirements.md with user's choice
+2. Document selected approach in design.md
+3. Move alternatives to "Alternative Approaches Considered"
+
+---
+
 ### Phase -1: Preparation (5-10 min)
 
 **Goal**: Set up directory structure and determine specification location
@@ -347,6 +385,34 @@ You MUST follow these phases sequentially and get explicit user approval before 
 ### R2: [Next Requirement]
 ...
 
+### Special Case: Decision Required
+
+If user's prompt contains decision triggers (see Decision-Making Protocol), use this format:
+
+**RN: [Component Name] Selection (⚠️ PENDING USER APPROVAL)**
+
+**Options**:
+1. **[Option A]**: [Brief description]
+   - ✅ Pros: [Key advantages]
+   - ❌ Cons: [Key tradeoffs]
+
+2. **[Option B]**: [Brief description]
+   - ✅ Pros: [Key advantages]
+   - ❌ Cons: [Key tradeoffs]
+
+3. **[Option C]**: [Brief description]
+   - ✅ Pros: [Key advantages]
+   - ❌ Cons: [Key tradeoffs]
+
+**Decision Required**: User must select preferred option before design phase.
+
+**Once user selects**, main assistant will update this section to standard format:
+```markdown
+### RN: [Component Name]
+The system shall use [user's selection]
+Rationale: [User's stated preference / tradeoff priorities]
+```
+
 ## Out of Scope
 - [Explicitly list what's NOT included]
 
@@ -491,7 +557,39 @@ The main assistant will handle all user communication from here.
    Please review the file in your editor.
    ```
 
-2. **Get user decision** using AskUserQuestion:
+2. **Check for pending decisions**:
+   - Read requirements.md
+   - Identify any "⚠️ PENDING USER APPROVAL" sections
+   - If found: collect decisions BEFORE asking for phase approval
+
+3. **Collect user decisions** (if pending items exist):
+   Use AskUserQuestion for each pending decision:
+   ```json
+   {
+     "questions": [{
+       "question": "R[N] requires a decision on [Component]: Which option do you prefer?",
+       "header": "[Component]",
+       "multiSelect": false,
+       "options": [
+         {"label": "[Option A]", "description": "[Pros/cons summary from requirements.md]"},
+         {"label": "[Option B]", "description": "[Pros/cons summary from requirements.md]"},
+         {"label": "[Option C]", "description": "[Pros/cons summary from requirements.md]"}
+       ]
+     }]
+   }
+   ```
+
+4. **Update requirements.md with decisions** (if applicable):
+   - Use Edit tool to replace "PENDING" sections with user's choices
+   - Update requirement from options list to SHALL statement:
+     ```markdown
+     ### R[N]: [Component Name]
+     The system shall use [user's selection]
+     Rationale: [User's stated preference / tradeoff priorities]
+     ```
+   - Include user's rationale based on their selection
+
+5. **Get phase approval** using AskUserQuestion:
    ```json
    {
      "questions": [{
@@ -508,7 +606,7 @@ The main assistant will handle all user communication from here.
    }
    ```
 
-3. **Resume agent based on response**:
+6. **Resume agent based on response**:
    - Approve → `Task(resume="<id>", prompt="User approved. Proceed to Phase 3.")`
    - Request changes → `Task(resume="<id>", prompt="User requests: [feedback]. Update file on disk.")`
    - Reject → `Task(resume="<id>", prompt="User rejected. Return to Phase 1: [feedback]")`
@@ -525,7 +623,7 @@ The main assistant will handle all user communication from here.
 **Focus**: "Mainly the technical developer concern" - architecture, data flow, component interactions
 
 **Steps**:
-#### Step 1. **Reference Phase 0 Context + Review Historic Designs**:
+#### Step 1. **Reference Phase 0 Context + User Decisions + Review Historic Designs**:
 
    **Use Project Context Summary from Phase 0**:
    - **Architecture**: [From CLAUDE.md - already read in Phase 0]
@@ -534,6 +632,13 @@ The main assistant will handle all user communication from here.
    - **Naming Conventions**: [From Phase 0 - for component naming]
    - **Dependency Rules**: [From Phase 0 - e.g., unidirectional deps]
    - **Testing Strategies**: [From Phase 0 - unit, integration, E2E]
+
+   **Reference User Decisions from Phase 2**:
+   - Check requirements.md for any decisions user made (SHALL statements with rationale)
+   - Ensure design aligns with user's selected options
+   - Document selected approach in detail
+   - Include "Alternative Approaches Considered" section for non-selected options
+   - Reference user's stated preferences/tradeoff priorities in design rationale
 
    **Read Historic Designs** (for proven patterns - optimized with Grep):
    ```bash
@@ -816,19 +921,13 @@ The main assistant will handle all user communication from here.
    **Estimated Time**: X-Y hours
    **Workflow**: Feature branch → PR → Review → Merge
 
-   **⚠️ IMPORTANT**: NEVER push to main. Always use feature branch + PR workflow.
+   **⚠️ IMPORTANT**: NEVER push to main. Always use feature branch / worktree + PR workflow.
 
    ## Implementation Phases
 
    ### Phase 1: Setup & Exploration (X min)
    **Goal**: [What this achieves]
 
-   - [ ] Create feature branch
-   ```bash
-   git checkout main
-   git pull origin main
-   git checkout -b fix/descriptive-name
-   ```
    - [ ] Review requirements.md and design.md
    - [ ] Verify development environment
 
@@ -1082,9 +1181,8 @@ The main assistant will handle all user communication from here.
 
    Next steps:
    1. Review specification
-   2. Create branch: git checkout -b fix/name
-   3. Follow tasks.md sequentially
-   4. Create PR when complete
+   2. Follow tasks.md sequentially
+   3. Create PR when complete
 
    Proceed with implementation?
    ```

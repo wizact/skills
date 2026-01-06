@@ -300,22 +300,157 @@ text := cc.getNodeText(node)  // Panics if node is nil
 ### Directory Structure
 
 - **Public APIs in pkg/**: Exportable libraries used by external projects
-- **Internal-only code in internal/**: Code that can't be imported by external projects (future)
+- **Internal-only code in internal/**: Code that can't be imported by external projects
 - **One package per directory**: Each directory should contain one Go package
 - **Avoid circular dependencies**: Use dependency inversion (interfaces) to break cycles
 
-**Example**:
+**Standard Go project layout**:
 ```
-pkg/
-├── chunker/       # Public parsing library
-│   └── ...
-└── storage/       # Public storage library
-    └── ...
+project-root/
+├── cmd/              # Command-line applications
+│   ├── myapp/        # Main application
+│   └── tool/         # Additional tools
+├── internal/         # Private application code (module-root level)
+│   ├── api/          # HTTP/gRPC handlers
+│   ├── cli/          # CLI implementation
+│   └── service/      # Business logic
+├── pkg/              # Public library code (can be imported by external projects)
+│   ├── domain/       # Domain models
+│   └── client/       # Client library
+├── docs/             # Documentation
+├── migrations/       # Database migrations (if applicable)
+└── go.mod
+```
 
-cmd/
-├── chunker/       # CLI application (uses pkg/chunker, pkg/storage)
-└── db-migration/  # Migration tool (uses pkg/storage)
+### The `internal/` Directory: Placement and Purpose
+
+**Rule: Place `internal/` at the module root, alongside `pkg/` and `cmd/`**
+
+The `internal/` directory is a special Go convention that prevents external imports. Go's import rules enforce that packages under `internal/` can only be imported by code in the same module tree at or above the `internal/` directory.
+
+#### ✅ Correct Placement (Module Root)
+
 ```
+github.com/yourorg/yourproject/
+├── cmd/
+│   └── myapp/
+│       └── main.go           # Imports internal/cli, internal/api
+├── internal/                 # ← At module root
+│   ├── api/
+│   │   ├── handlers.go
+│   │   └── middleware.go
+│   ├── cli/
+│   │   ├── root.go
+│   │   └── commands.go
+│   └── service/
+│       └── business_logic.go
+└── pkg/
+    └── domain/
+
+Import path: github.com/yourorg/yourproject/internal/cli
+```
+
+**Benefits**:
+- Clean, predictable import paths
+- Follows Go community standards (used by kubernetes, docker, prometheus, etc.)
+- Clear separation: `internal/` alongside `pkg/` shows public vs. private code
+- Easier to understand project structure at a glance
+
+#### ❌ Incorrect Placement (Nested in cmd/)
+
+```
+github.com/yourorg/yourproject/
+├── cmd/
+│   └── myapp/
+│       ├── internal/         # ← Nested (non-standard)
+│       │   └── handlers/
+│       │       └── http.go
+│       └── main.go
+└── pkg/
+
+Import path: github.com/yourorg/yourproject/cmd/myapp/internal/handlers
+```
+
+**Problems**:
+- Confusing import paths with redundant directory nesting
+- Non-standard structure (violates Go community conventions)
+- Harder for new contributors to understand project organization
+- Makes code harder to move or refactor
+- Limits reusability across multiple cmd/ binaries
+
+#### When to Use `internal/` vs. `pkg/`
+
+**Use `pkg/`** for code that:
+- ✅ Should be importable by other projects
+- ✅ Provides stable, documented public APIs
+- ✅ Is designed for reuse (libraries, frameworks)
+- ✅ Example: `pkg/client` - SDK for external consumers
+
+**Use `internal/`** for code that:
+- ✅ Is specific to this application only
+- ✅ Should NOT be imported by external projects
+- ✅ Can change without affecting external users
+- ✅ Contains business logic, handlers, implementation details
+- ✅ Example: `internal/api` - HTTP handlers for this service
+
+**Use `cmd/` packages** (not `internal/`) for:
+- ✅ Main entry points (`package main`)
+- ✅ Minimal glue code that wires together `pkg/` and `internal/`
+- ✅ Example: `cmd/myapp/main.go` - just initializes and starts the app
+
+#### Real-World Example
+
+**Before (Incorrect)**:
+```go
+// cmd/myapp/main.go
+import "github.com/yourorg/yourproject/cmd/myapp/internal/handlers"
+
+func main() {
+    handlers.Start()  // Confusing: nested path
+}
+```
+
+**After (Correct)**:
+```go
+// cmd/myapp/main.go
+import "github.com/yourorg/yourproject/internal/api"
+
+func main() {
+    api.Start()  // Clear: internal API package
+}
+```
+
+#### Multiple Binaries Sharing Code
+
+When you have multiple binaries (`cmd/server`, `cmd/cli`, `cmd/worker`), they can all share `internal/` code:
+
+```
+github.com/yourorg/yourproject/
+├── cmd/
+│   ├── server/
+│   │   └── main.go       # Imports internal/api, internal/service
+│   ├── cli/
+│   │   └── main.go       # Imports internal/cli, internal/service
+│   └── worker/
+│       └── main.go       # Imports internal/service
+├── internal/             # Shared by all cmd/ binaries
+│   ├── api/              # Used by cmd/server
+│   ├── cli/              # Used by cmd/cli
+│   └── service/          # Used by all binaries
+└── pkg/
+    └── client/           # Public client library
+```
+
+This is **only possible** with module-root `internal/`. Nested `cmd/{app}/internal/` would not be accessible to other binaries.
+
+#### Key Takeaways
+
+1. **Module-root placement**: Always put `internal/` at the module root
+2. **Alongside `pkg/`**: Keep `internal/` and `pkg/` at the same level for clarity
+3. **Descriptive names**: Use meaningful package names under `internal/` (e.g., `internal/api`, `internal/service`, `internal/repository`)
+4. **No nesting**: Avoid `cmd/{app}/internal/` - use module-root `internal/` instead
+5. **Share across binaries**: Module-root `internal/` can be imported by all `cmd/` binaries
+6. **Check conventions**: Look at standard Go projects (kubernetes, prometheus, docker, hugo) for reference
 
 ### Import Organization
 
